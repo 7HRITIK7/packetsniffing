@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Network Map</title>
+    <style>
+        body { margin: 0; font-family: sans-serif; background-color: #000011; color: white; }
+        #globeViz { width: 100vw; height: 100vh; }
+        .info-panel { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; }
+    </style>
+    <script src="//unpkg.com/globe.gl"></script>
+</head>
+<body>
+
+<div id="globeViz"></div>
+<div class="info-panel">
+    <h1>Network Digital Footprint</h1>
+    <p>Showing connections from Hubballi, Karnataka</p>
+</div>
+
+<script>
+    const HOME_LOCATION = { lat: 15.3647, lon: 75.1240, city: 'Hubballi' };
+
+    // FIX: Changed variable name from 'Globe' to 'myGlobe'
+    const myGlobe = Globe()
+        (document.getElementById('globeViz'))
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+        .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
+        .pointOfView({ lat: 20.5937, lng: 78.9629, altitude: 2.5 }); // Center view over India
+
+    // Fetch the captured packet data
+    fetch('scan_results.json')
+        .then(res => res.json())
+        .then(scanData => {
+            const arcsData = scanData.map(d => ({
+                startLat: HOME_LOCATION.lat,
+                startLng: HOME_LOCATION.lon,
+                endLat: d.lat,
+                endLng: d.lon,
+                color: d.is_malicious ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 255, 255, 0.4)',
+                stroke: d.is_malicious ? 1 : 0.5,
+                label: `${d.city}, ${d.country}`
+            }));
+
+            const pointsData = [
+                // Home location point
+                { ...HOME_LOCATION, lat: HOME_LOCATION.lat, lng: HOME_LOCATION.lon, size: 0.8, color: 'lime' },
+                // Destination points
+                ...scanData.map(d => ({
+                    lat: d.lat,
+                    lng: d.lon,
+                    size: d.is_malicious ? 0.7 : 0.4,
+                    color: d.is_malicious ? 'red' : 'cyan',
+                    label: `<b>${d.ip}</b><br>${d.city}, ${d.country}`
+                }))
+            ];
+
+            // FIX: Changed variable name from 'Globe' to 'myGlobe'
+            myGlobe.arcsData(arcsData)
+                 .arcColor('color')
+                 .arcStroke('stroke')
+                 .arcDashLength(0.4)
+                 .arcDashGap(0.2)
+                 .arcDashAnimateTime(2000);
+
+            // FIX: Changed variable name from 'Globe' to 'myGlobe'
+            myGlobe.pointsData(pointsData)
+                 .pointColor('color')
+                 .pointAltitude(0.01)
+                 .pointRadius('size')
+                 .pointLabel('label');
+        });
+
+</script>
+</body>
+</html>
